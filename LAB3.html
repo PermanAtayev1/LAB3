@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Processing App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        #imageCanvas {
+            border: 1px solid black;
+            margin-top: 10px;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        button {
+            margin: 5px;
+        }
+    </style>
+    <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+</head>
+<body>
+
+    <h1>Image Processing Application</h1>
+    <input type="file" id="upload" accept="image/*">
+    <canvas id="imageCanvas"></canvas>
+
+    <div class="controls">
+        <button onclick="equalizeHistogram()">Equalize Histogram</button>
+        <button onclick="linearContrast()">Linear Contrast</button>
+        <button onclick="sharpenImage()">Sharpen</button>
+    </div>
+
+    <script>
+        const upload = document.getElementById('upload');
+        const canvas = document.getElementById('imageCanvas');
+        const ctx = canvas.getContext('2d');
+        let originalImage = null;
+
+        upload.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    originalImage = ctx.getImageData(0, 0, img.width, img.height);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function equalizeHistogram() {
+            if (!originalImage) return;
+            let src = cv.imread(canvas);
+            let dst = new cv.Mat();
+            cv.cvtColor(src, src, cv.COLOR_RGBA2GRAY, 0);
+            cv.equalizeHist(src, dst);
+            cv.imshow(canvas, dst);
+            src.delete(); dst.delete();
+        }
+
+        function linearContrast() {
+            if (!originalImage) return;
+            let src = cv.imread(canvas);
+            let dst = new cv.Mat();
+            src.convertTo(dst, -1, 1.2, 0); // Adjust the alpha (1.2) for contrast
+            cv.imshow(canvas, dst);
+            src.delete(); dst.delete();
+        }
+
+        function sharpenImage() {
+            if (!originalImage) return;
+            let src = cv.imread(canvas);
+            let dst = new cv.Mat();
+            let kernel = cv.Mat.eye(3, 3, cv.CV_32F);
+            kernel.data32F[4] = -8.0; // Center coefficient for sharpening
+            cv.filter2D(src, dst, cv.CV_8U, kernel);
+            cv.addWeighted(src, 1.5, dst, -0.5, 0, dst);
+            cv.imshow(canvas, dst);
+            src.delete(); dst.delete(); kernel.delete();
+        }
+    </script>
+</body>
+</html>
